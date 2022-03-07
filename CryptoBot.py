@@ -22,18 +22,15 @@ bot_token = config.bot_token #obtain bot token from discord.com/developers
 
 def get_stock_time_series(ticker, interval, api):
     url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval={interval}&apikey={api}"
-    response = requests.get(url).json()
-    return response
+    return requests.get(url).json()
 
 def calculate_delta(responses, ticker):
     x = np.linspace(1,30, 30)
     time_series = responses[ticker]['values']
-    
+
     arr = np.zeros(len(time_series))
-    i = 0
-    for timePoint in time_series:
+    for i, timePoint in enumerate(time_series):
         arr[i] = timePoint['close']
-        i = i+1
     print(ticker, "<<<<<<<<<<<<<<<<<<<<<<<")
     arr = np.flip(arr)
     avg = np.average(arr)
@@ -97,8 +94,8 @@ async def timer():
     await channel.send('Hello, my name is CryptoBot')
     await channel.send("I am monitoring {}".format(ticker_symbols))
     print(">>>>>>>>>>>>>>crypto script running<<<<<<<<<<<<<<<<<")
-    
-    
+
+
     cmdprint = False
 
     while True:
@@ -109,16 +106,19 @@ async def timer():
                 time_series_json = get_stock_time_series(ticker_symbols, interval_time, api_key)
                 cmdprint = True
                 print("****************************************************")    
-                
+
                 for ticker in ticker_symbols.split(','):
                     delta = calculate_delta(time_series_json, ticker)
                     if delta > alertThresh or delta < -1*alertThresh:
-                        stuff_in_string = "{} had a {:.2f}% change within the past {} minutes.".format(ticker, delta, int(interval_time[0:-3])*30)
+                        stuff_in_string = "{} had a {:.2f}% change within the past {} minutes.".format(
+                            ticker, delta, int(interval_time[:-3]) * 30
+                        )
+
                         await channel.send(stuff_in_string)
-        
+
         else:
             cmdprint = False
-            
+
         await asyncio.sleep(1)
 
 bot.loop.create_task(timer())
